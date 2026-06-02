@@ -3,7 +3,7 @@ export const portfolioData = {
   personalInfo: {
     name: "Bharathiraja M",
     title: "MERN Stack Developer",
-    roles: ["MERN Stack Developer", "Full Stack Developer", "CSE Undergraduate"],
+    roles: ["Full Stack Developer", "MERN Stack Developer"],
     bio: "Passionate MERN Stack Developer, Full Stack Developer, and Computer Science Engineering student specializing in building high-performance web applications using React.js, Node.js, MongoDB, and Express.js.",
     location: "Vellore, Tamil Nadu",
     email: "bharathirajamurali472@gmail.com",
@@ -11,7 +11,7 @@ export const portfolioData = {
     resumeUrl: "/resume/Bharathiraja_Resume.pdf",
     avatarUrl: "/assets/profile.jpg"
   },
-  
+
   about: {
     headline: "Aspiring Software Engineer & MERN Stack Developer",
     paragraphs: [
