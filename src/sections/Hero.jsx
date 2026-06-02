@@ -6,13 +6,12 @@ import ProfileImage from '../components/ProfileImage';
 import ResumeFallbackModal from '../components/ResumeFallbackModal';
 
 export default function Hero() {
-  const { name, bio } = portfolioData.personalInfo;
+  const { name, bio, roles } = portfolioData.personalInfo;
   
   // Custom high-performance Typewriter Engine: loop infinitely with cursor blink
-  const rolesList = [
+  const rolesList = roles || [
     "MERN Stack Developer",
     "Full Stack Developer",
-    "CSE Undergraduate",
     "React Developer"
   ];
   
