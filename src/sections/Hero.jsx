@@ -192,7 +192,7 @@ export default function Hero() {
                   3rd
                 </span>
                 <span className="block text-[10px] md:text-xs text-slate-400 mt-2 uppercase font-extrabold tracking-wider leading-snug">
-                  Year CSE B.E.
+                  Year B.E CSE
                 </span>
               </div>
 
