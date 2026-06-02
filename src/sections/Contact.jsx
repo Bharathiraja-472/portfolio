@@ -1,15 +1,23 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { portfolioData } from '../data/portfolioData';
 import SectionHeader from '../components/SectionHeader';
 import { HiMail, HiPhone, HiLocationMarker, HiPaperAirplane, HiCheckCircle, HiExclamationCircle } from 'react-icons/hi';
-import { FaGithub, FaLinkedin } from 'react-icons/fa';
 import emailjs from '@emailjs/browser';
 
 export default function Contact() {
   const { email, phone, location } = portfolioData.personalInfo;
   
-  const [formData, setFormData] = useState({ name: '', email: '', subject: '', message: '' });
+  const formRef = useRef();
+
+  // Form field state, mapping to standard EmailJS template variable names
+  const [formData, setFormData] = useState({ 
+    from_name: '', 
+    from_email: '', 
+    subject: '', 
+    message: '' 
+  });
+  
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [submitError, setSubmitError] = useState('');
@@ -23,17 +31,22 @@ export default function Contact() {
     }
   };
 
+  // Safe client-side validations
   const validateForm = () => {
     const errors = {};
-    if (!formData.name.trim()) errors.name = 'Full name is required';
-    
-    if (!formData.email.trim()) {
-      errors.email = 'Email address is required';
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      errors.email = 'Please provide a valid email';
+    if (!formData.from_name.trim()) {
+      errors.from_name = 'Full name is required';
     }
     
-    if (!formData.message.trim()) errors.message = 'Message body is required';
+    if (!formData.from_email.trim()) {
+      errors.from_email = 'Email address is required';
+    } else if (!/\S+@\S+\.\S+/.test(formData.from_email)) {
+      errors.from_email = 'Please provide a valid email address';
+    }
+    
+    if (!formData.message.trim()) {
+      errors.message = 'Message body is required';
+    }
     return errors;
   };
 
@@ -50,13 +63,12 @@ export default function Contact() {
 
     setIsSubmitting(true);
 
-    // Retrieve environment variables securely
+    // Securely retrieve environment variables
     const serviceId = import.meta.env.VITE_EMAILJS_SERVICE_ID;
     const templateId = import.meta.env.VITE_EMAILJS_TEMPLATE_ID;
     const publicKey = import.meta.env.VITE_EMAILJS_PUBLIC_KEY;
-    const recipientEmail = import.meta.env.VITE_RECIPIENT_EMAIL || email;
 
-    // Check if configuration exists and is not a placeholder
+    // Check if variables are active and not default placeholders
     const isConfigured = 
       serviceId && 
       templateId && 
@@ -67,51 +79,57 @@ export default function Contact() {
 
     if (isConfigured) {
       try {
-        const templateParams = {
-          from_name: formData.name,
-          from_email: formData.email,
-          subject: formData.subject || 'Portfolio Contact Inquiry',
-          message: formData.message,
-          to_email: recipientEmail,
-        };
-
-        const result = await emailjs.send(serviceId, templateId, templateParams, publicKey);
+        // Send directly using sendForm referencing the DOM form block
+        const result = await emailjs.sendForm(
+          serviceId, 
+          templateId, 
+          formRef.current, 
+          publicKey
+        );
         
-        if (result.status === 200) {
+        if (result.status === 200 || result.text === 'OK') {
           setSubmitSuccess(true);
-          setFormData({ name: '', email: '', subject: '', message: '' });
-          // Auto fade success message after 5 seconds
+          setFormData({ from_name: '', from_email: '', subject: '', message: '' });
+          
+          // Reset button/alert state back to default after 5 seconds
           setTimeout(() => setSubmitSuccess(false), 5000);
         } else {
-          throw new Error('Unexpected API response status');
+          throw new Error('Unexpected server response status');
         }
       } catch (err) {
-        console.error('EmailJS Submission Failure:', err);
-        setSubmitError('Failed to deliver message via EmailJS. Please check your API keys or try again.');
+        console.error('EmailJS Submit Fail:', err);
+        setSubmitError(err.text || 'Failed to deliver message via EmailJS. Please check your template parameters.');
       } finally {
         setIsSubmitting(false);
       }
     } else {
-      // Elegant Recruiter-friendly fallback simulation (Zero runtime crash)
+      // Recruiter-friendly fallback simulation when API keys are blank local placeholders
       console.warn(
-        'EmailJS environment variables are not configured in your .env file. ' +
+        'EmailJS environment variables are not configured. ' +
         'Simulating mock API server success response...'
       );
       
       setTimeout(() => {
         setIsSubmitting(false);
         setSubmitSuccess(true);
-        setFormData({ name: '', email: '', subject: '', message: '' });
+        setFormData({ from_name: '', from_email: '', subject: '', message: '' });
         
-        // Auto reset success alert after 5 seconds
+        // Auto reset success state after 5 seconds
         setTimeout(() => setSubmitSuccess(false), 5000);
-      }, 1200);
+      }, 1500);
     }
+  };
+
+  // Resolve active submit button text
+  const getButtonText = () => {
+    if (isSubmitting) return "Sending...";
+    if (submitSuccess) return "Message Sent ✓";
+    return "Send Message";
   };
 
   return (
     <section id="contact" className="py-24 bg-slate-50/50 relative overflow-hidden">
-      {/* Background radial glowing gradients */}
+      {/* Ambient background glows */}
       <div className="absolute top-1/4 left-0 w-[400px] h-[400px] rounded-full bg-blue-100/10 blur-3xl -z-10" />
 
       <div className="max-w-7xl mx-auto px-6 md:px-12">
@@ -121,9 +139,9 @@ export default function Contact() {
           subtitle="Are you looking to hire a MERN Stack Developer? Feel free to reach out directly through the contacts or the submission form."
         />
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 max-w-6xl mx-auto items-stretch">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 max-w-6xl mx-auto items-stretch mt-12">
           
-          {/* Left Column: Direct Contact Details */}
+          {/* Left Column: Direct Contacts */}
           <motion.div
             initial={{ opacity: 0, y: 25 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -174,10 +192,9 @@ export default function Contact() {
               </div>
             </a>
 
-
           </motion.div>
 
-          {/* Right Column: Secure Email Form */}
+          {/* Right Column: Secure Form */}
           <motion.div
             initial={{ opacity: 0, y: 25 }}
             whileInView={{ opacity: 1, y: 0 }}
@@ -189,12 +206,12 @@ export default function Contact() {
               
               <h3 className="text-xl font-bold text-slate-900 mb-2">Send a Message</h3>
               <p className="text-xs text-slate-400 mb-8 font-medium">
-                Fill out the fields below, and I will receive an automated notification directly.
+                Fill out the fields below to send an automated notification directly.
               </p>
 
-              <form onSubmit={handleSubmit} className="space-y-5">
+              <form ref={formRef} onSubmit={handleSubmit} className="space-y-5">
                 
-                {/* Visual Alerts using AnimatePresence */}
+                {/* Status Messages */}
                 <AnimatePresence mode="wait">
                   {submitSuccess && (
                     <motion.div
@@ -202,12 +219,12 @@ export default function Contact() {
                       initial={{ opacity: 0, y: -10 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -10 }}
-                      className="p-4 rounded-xl bg-emerald-50 border border-emerald-100 flex items-start gap-3.5 text-emerald-800 shadow-sm"
+                      className="p-4 rounded-xl bg-emerald-50 border border-emerald-100 flex items-start gap-3.5 text-emerald-800 shadow-sm animate-fade-in"
                     >
                       <HiCheckCircle className="text-emerald-500 flex-shrink-0 mt-0.5" size={20} />
                       <div>
                         <p className="text-sm font-bold">Message sent successfully</p>
-                        <p className="text-xs text-emerald-600 mt-0.5">Thank you for reaching out. I'll get in touch with you shortly.</p>
+                        <p className="text-xs text-emerald-600 mt-0.5">Thank you for reaching out! I will respond to your inquiry shortly.</p>
                       </div>
                     </motion.div>
                   )}
@@ -218,7 +235,7 @@ export default function Contact() {
                       initial={{ opacity: 0, y: -10 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -10 }}
-                      className="p-4 rounded-xl bg-rose-50 border border-rose-100 flex items-start gap-3.5 text-rose-800 shadow-sm"
+                      className="p-4 rounded-xl bg-rose-50 border border-rose-100 flex items-start gap-3.5 text-rose-800 shadow-sm animate-fade-in"
                     >
                       <HiExclamationCircle className="text-rose-500 flex-shrink-0 mt-0.5" size={20} />
                       <div>
@@ -231,46 +248,46 @@ export default function Contact() {
 
                 {/* Input Name */}
                 <div className="flex flex-col gap-2">
-                  <label htmlFor="name" className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                  <label htmlFor="from_name" className="text-xs font-bold text-slate-700 uppercase tracking-wider">
                     Full Name <span className="text-rose-500">*</span>
                   </label>
                   <input
                     type="text"
-                    id="name"
-                    name="name"
-                    value={formData.name}
+                    id="from_name"
+                    name="from_name"
+                    value={formData.from_name}
                     onChange={handleChange}
                     placeholder="Enter your name"
                     className={`px-4 py-3 rounded-xl border bg-slate-50/50 hover:bg-white focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-sm font-medium transition-all duration-200 ${
-                      formErrors.name ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-500/20' : 'border-slate-200 focus:border-blue-500'
+                      formErrors.from_name ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-500/20' : 'border-slate-200 focus:border-blue-500'
                     }`}
                   />
-                  {formErrors.name && (
+                  {formErrors.from_name && (
                     <span className="text-xs font-semibold text-rose-500 font-mono leading-none mt-1">
-                      {formErrors.name}
+                      {formErrors.from_name}
                     </span>
                   )}
                 </div>
 
                 {/* Input Email */}
                 <div className="flex flex-col gap-2">
-                  <label htmlFor="email" className="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                  <label htmlFor="from_email" className="text-xs font-bold text-slate-700 uppercase tracking-wider">
                     Email Address <span className="text-rose-500">*</span>
                   </label>
                   <input
                     type="email"
-                    id="email"
-                    name="email"
-                    value={formData.email}
+                    id="from_email"
+                    name="from_email"
+                    value={formData.from_email}
                     onChange={handleChange}
                     placeholder="name@company.com"
                     className={`px-4 py-3 rounded-xl border bg-slate-50/50 hover:bg-white focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 text-sm font-medium transition-all duration-200 ${
-                      formErrors.email ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-500/20' : 'border-slate-200 focus:border-blue-500'
+                      formErrors.from_email ? 'border-rose-400 focus:border-rose-500 focus:ring-rose-500/20' : 'border-slate-200 focus:border-blue-500'
                     }`}
                   />
-                  {formErrors.email && (
+                  {formErrors.from_email && (
                     <span className="text-xs font-semibold text-rose-500 font-mono leading-none mt-1">
-                      {formErrors.email}
+                      {formErrors.from_email}
                     </span>
                   )}
                 </div>
@@ -322,13 +339,19 @@ export default function Contact() {
                 >
                   {isSubmitting ? (
                     <>
-                      <div className="w-5 h-5 rounded-full border-2 border-white border-t-transparent animate-spin" />
-                      Sending...
+                      <div className="w-4 h-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                      {getButtonText()}
                     </>
                   ) : (
                     <>
-                      <HiPaperAirplane className="rotate-90 text-white" size={16} />
-                      Send Message
+                      {submitSuccess ? (
+                        <span>{getButtonText()}</span>
+                      ) : (
+                        <>
+                          <HiPaperAirplane className="rotate-90 text-white" size={16} />
+                          <span>{getButtonText()}</span>
+                        </>
+                      )}
                     </>
                   )}
                 </button>
@@ -337,7 +360,7 @@ export default function Contact() {
 
             </div>
           </motion.div>
-
+ 
         </div>
       </div>
     </section>
