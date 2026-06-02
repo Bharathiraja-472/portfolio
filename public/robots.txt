@@ -1,0 +1,6 @@
+# Robots.txt for Bharathiraja M Portfolio
+User-agent: *
+Allow: /
+
+# Sitemap link to direct crawlers
+Sitemap: https://bharathiraja.netlify.app/sitemap.xml
