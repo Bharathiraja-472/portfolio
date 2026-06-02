@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { HiArrowRight, HiDownload, HiPaperAirplane } from 'react-icons/hi';
 import { portfolioData } from '../data/portfolioData';
 import ProfileImage from '../components/ProfileImage';
+import ResumeFallbackModal from '../components/ResumeFallbackModal';
 
 export default function Hero() {
   const { name, bio } = portfolioData.personalInfo;
@@ -19,6 +20,27 @@ export default function Hero() {
   const [currentText, setCurrentText] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
   const [typingSpeed, setTypingSpeed] = useState(100);
+  const [isResumeAvailable, setIsResumeAvailable] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  useEffect(() => {
+    fetch('/resume/Bharathiraja_Resume.pdf', { method: 'HEAD' })
+      .then((res) => {
+        if (!res.ok) {
+          setIsResumeAvailable(false);
+        }
+      })
+      .catch(() => {
+        setIsResumeAvailable(false);
+      });
+  }, []);
+
+  const handleResumeClick = (e) => {
+    if (!isResumeAvailable) {
+      e.preventDefault();
+      setIsModalOpen(true);
+    }
+  };
 
   useEffect(() => {
     let timer;
@@ -133,7 +155,9 @@ export default function Hero() {
               {/* Resume Button */}
               <a
                 href="/resume/Bharathiraja_Resume.pdf"
-                download="Bharathiraja_M_Resume.pdf"
+                onClick={handleResumeClick}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow-md shadow-blue-500/10 hover:shadow-lg hover:shadow-blue-500/20 active:translate-y-0.5 transition-all duration-200 cursor-pointer"
               >
                 <HiDownload size={16} />
@@ -220,6 +244,8 @@ export default function Hero() {
 
         </div>
       </div>
+
+      <ResumeFallbackModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
     </section>
   );
 }

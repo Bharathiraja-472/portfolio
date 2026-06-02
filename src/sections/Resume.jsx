@@ -1,12 +1,35 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { portfolioData } from '../data/portfolioData';
 import SectionHeader from '../components/SectionHeader';
 import { HiDownload, HiDocumentText, HiMail, HiAcademicCap, HiLightningBolt } from 'react-icons/hi';
 import { FaGithub, FaLinkedin } from 'react-icons/fa';
+import ResumeFallbackModal from '../components/ResumeFallbackModal';
 
 export default function Resume() {
   const { name, title, email, phone, location } = portfolioData.personalInfo;
+  
+  const [isResumeAvailable, setIsResumeAvailable] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  useEffect(() => {
+    fetch('/resume/Bharathiraja_Resume.pdf', { method: 'HEAD' })
+      .then((res) => {
+        if (!res.ok) {
+          setIsResumeAvailable(false);
+        }
+      })
+      .catch(() => {
+        setIsResumeAvailable(false);
+      });
+  }, []);
+
+  const handleResumeClick = (e) => {
+    if (!isResumeAvailable) {
+      e.preventDefault();
+      setIsModalOpen(true);
+    }
+  };
   
   return (
     <section id="resume" className="py-24 bg-white relative overflow-hidden">
@@ -171,7 +194,9 @@ export default function Resume() {
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
               <a
                 href="/resume/Bharathiraja_Resume.pdf"
-                download="Bharathiraja_M_Resume.pdf"
+                onClick={handleResumeClick}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="btn-primary flex items-center justify-center gap-2.5 text-center cursor-pointer py-4"
               >
                 <HiDownload size={18} />
@@ -180,8 +205,9 @@ export default function Resume() {
 
               <a
                 href="/resume/Bharathiraja_Resume.pdf"
+                onClick={handleResumeClick}
                 target="_blank"
-                rel="noreferrer"
+                rel="noopener noreferrer"
                 className="px-6 py-4 rounded-xl border border-slate-200 bg-white/60 hover:bg-slate-50 text-slate-700 text-center font-bold text-sm hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200"
               >
                 View PDF in New Tab
@@ -197,6 +223,8 @@ export default function Resume() {
 
         </div>
       </div>
+
+      <ResumeFallbackModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
     </section>
   );
 }
